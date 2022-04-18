@@ -42,7 +42,19 @@ class EnterEmailViewController: UIViewController {
         //신규 사용자 생성
         Auth.auth().createUser(withEmail: email, password: password) { [weak self] authResult, error in
             guard let self = self else { return }
-            self.showMainViewController()
+            // 같은 사용자 이메일과 패스워드를 넣어주면 17007 에러 코드를 발생함. 그대로 로그인하도록함.
+            if let error = error {
+                let code = (error as NSError).code
+                switch code {
+                case 17007: //이미 가입한 계정일 때
+                    //로그인하기
+                    self.loginUser(withEmail: email, password: password)
+                default:
+                    self.errorMessageLabel.text = error.localizedDescription // 그 외에 에러시 디스크립션 라벨에 출력
+                }
+            } else {
+                self.showMainViewController() //아무 에러가 없을 경우 환영뷰로 이동
+            }
         }
     }
     
@@ -51,6 +63,19 @@ class EnterEmailViewController: UIViewController {
         let mainViewController = storyboard.instantiateViewController(withIdentifier: "MainViewController")
         mainViewController.modalPresentationStyle = .fullScreen
         navigationController?.show(mainViewController, sender: nil)
+    }
+    
+    // 로그인 하기
+    private func loginUser(withEmail email: String, password: String) {
+        Auth.auth().signIn(withEmail: email, password: password) { [weak self] _, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                self.errorMessageLabel.text = error.localizedDescription //에러시 라벨에 출력
+            } else {
+                self.showMainViewController() // 에러가 없다면 메인뷰로 이동
+            }
+        }
     }
     
 }
